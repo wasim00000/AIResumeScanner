@@ -18,34 +18,90 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom CSS
+st.markdown("""
+    <style>
+    .main {
+        padding: 2rem;
+        background-color: #f8f9fa;
+    }
+    .stTitle {
+        color: #1f67b1;
+        font-size: 3rem !important;
+        padding-bottom: 2rem;
+    }
+    .stMarkdown {
+        font-size: 1.2rem;
+    }
+    .stButton button {
+        background-color: #1f67b1;
+        color: white;
+        border-radius: 5px;
+        padding: 0.5rem 2rem;
+        font-weight: bold;
+    }
+    .stButton button:hover {
+        background-color: #155085;
+    }
+    div[data-testid="stFileUploader"] {
+        padding: 1rem;
+        border: 2px dashed #1f67b1;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+    div[data-testid="stExpander"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        margin: 0.5rem 0;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Application title and description
 st.title("AI-Powered Resume Scanner")
 st.markdown("""
-This application helps you match candidate resumes with job descriptions using NLP.
-Upload multiple resumes, input a job description, and get ranked results.
-""")
+<div style='background-color: white; padding: 1.5rem; border-radius: 10px; border-left: 5px solid #1f67b1; margin-bottom: 2rem;'>
+    <h4 style='color: #1f67b1; margin-bottom: 0.5rem;'>Welcome to the Resume Scanner!</h4>
+    <p>This intelligent application helps you:</p>
+    <ul>
+        <li>Match candidate resumes with job descriptions using advanced NLP</li>
+        <li>Analyze multiple resumes simultaneously</li>
+        <li>Get detailed skill matching and ranking results</li>
+        <li>Visualize candidate comparisons</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
 
 # Create sidebar for inputs
 with st.sidebar:
-    st.header("Inputs")
+    st.markdown("""
+        <div style='text-align: center; padding: 1rem; background-color: #1f67b1; color: white; border-radius: 5px; margin-bottom: 2rem;'>
+            <h2 style='margin: 0;'>Analysis Controls</h2>
+        </div>
+    """, unsafe_allow_html=True)
     
     # Job Description Input
-    st.subheader("Job Description")
-    job_description = st.text_area("Enter the job description:", height=200)
+    st.markdown("<h3 style='color: #1f67b1;'>📝 Job Description</h3>", unsafe_allow_html=True)
+    job_description = st.text_area("Enter the job requirements:", height=200,
+                                 help="Paste the job description here. The more detailed it is, the better the matching will be.")
     
     # Resume File Upload
-    st.subheader("Resume Upload")
-    uploaded_files = st.file_uploader("Upload resumes (PDF/DOCX)", 
-                                      type=["pdf", "docx"], 
-                                      accept_multiple_files=True)
+    st.markdown("<h3 style='color: #1f67b1; margin-top: 2rem;'>📎 Resume Upload</h3>", unsafe_allow_html=True)
+    uploaded_files = st.file_uploader("Drop your resumes here (PDF/DOCX)", 
+                                    type=["pdf", "docx"], 
+                                    accept_multiple_files=True,
+                                    help="You can upload multiple resumes at once")
     
     # Analysis Settings
-    st.subheader("Analysis Settings")
-    min_skill_match = st.slider("Minimum Skill Match %", 0, 100, 50)
-    top_n = st.slider("Show Top N Candidates", 1, 20, 5)
+    st.markdown("<h3 style='color: #1f67b1; margin-top: 2rem;'>⚙️ Settings</h3>", unsafe_allow_html=True)
+    min_skill_match = st.slider("Minimum Skill Match %", 0, 100, 50,
+                               help="Filter out candidates below this match percentage")
+    top_n = st.slider("Show Top N Candidates", 1, 20, 5,
+                      help="Number of top candidates to display")
     
     # Process Button
-    process_button = st.button("Analyze Resumes")
+    st.markdown("<br>", unsafe_allow_html=True)
+    process_button = st.button("🔍 Analyze Resumes", use_container_width=True)
 
 # Initialize session state if not already done
 if 'processed_resumes' not in st.session_state:

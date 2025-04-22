@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from collections import Counter
@@ -5,9 +6,6 @@ from collections import Counter
 def display_resume_details(resume_data):
     """
     Display detailed information about a resume
-    
-    Args:
-        resume_data (dict): Dictionary containing resume information
     """
     st.write(f"**Filename:** {resume_data['filename']}")
     st.write(f"**Match Percentage:** {resume_data['match_percentage']}%")
@@ -39,21 +37,14 @@ def display_resume_details(resume_data):
         else:
             st.write("No other skills found")
     
-    # Display resume preview
-    with st.expander("Resume Text Preview"):
-        st.text_area("", resume_data['text'][:1000] + ("..." if len(resume_data['text']) > 1000 else ""), height=200)
+    # Display resume preview without nested expander
+    st.write("### Resume Text Preview")
+    preview_text = resume_data['text'][:1000] + ("..." if len(resume_data['text']) > 1000 else "")
+    st.text_area("", preview_text, height=200)
 
 def get_top_keywords(resumes_data, job_skills, top_n=10):
     """
     Extract top keywords from resumes based on frequency
-    
-    Args:
-        resumes_data (list): List of resume data dictionaries
-        job_skills (list): List of skills from job description
-        top_n (int): Number of top keywords to return
-        
-    Returns:
-        pandas.DataFrame: DataFrame with top keywords and their frequencies
     """
     # Count skill frequencies across all resumes
     skill_counter = Counter()

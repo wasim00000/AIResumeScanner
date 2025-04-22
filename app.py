@@ -79,26 +79,26 @@ with st.sidebar:
             <h2 style='margin: 0;'>Analysis Controls</h2>
         </div>
     """, unsafe_allow_html=True)
-    
+
     # Job Description Input
     st.markdown("<h3 style='color: #1f67b1;'>📝 Job Description</h3>", unsafe_allow_html=True)
     job_description = st.text_area("Enter the job requirements:", height=200,
                                  help="Paste the job description here. The more detailed it is, the better the matching will be.")
-    
+
     # Resume File Upload
     st.markdown("<h3 style='color: #1f67b1; margin-top: 2rem;'>📎 Resume Upload</h3>", unsafe_allow_html=True)
     uploaded_files = st.file_uploader("Drop your resumes here (PDF/DOCX)", 
                                     type=["pdf", "docx"], 
                                     accept_multiple_files=True,
                                     help="You can upload multiple resumes at once")
-    
+
     # Analysis Settings
     st.markdown("<h3 style='color: #1f67b1; margin-top: 2rem;'>⚙️ Settings</h3>", unsafe_allow_html=True)
     min_skill_match = st.slider("Minimum Skill Match %", 0, 100, 50,
                                help="Filter out candidates below this match percentage")
     top_n = st.slider("Show Top N Candidates", 1, 20, 5,
                       help="Number of top candidates to display")
-    
+
     # Process Button
     st.markdown("<br>", unsafe_allow_html=True)
     process_button = st.button("🔍 Analyze Resumes", use_container_width=True)
@@ -113,27 +113,31 @@ if 'ranked_resumes' not in st.session_state:
 
 # Process the uploaded resumes
 if process_button and uploaded_files and job_description:
+    status_text = st.empty()
+    progress_bar = st.progress(0)
+    status_text.text("Processing resumes and job description...")
     with st.spinner('Processing resumes and job description...'):
         # Create a list to store resume data
         resumes_data = []
-        
+
         # Process job description
         preprocessed_jd = preprocess_text(job_description)
         job_skills = extract_skills(preprocessed_jd)
         job_entities = extract_entities(preprocessed_jd)
-        
+
         st.session_state.job_skills = job_skills
-        
+
         # Process each uploaded resume
         for uploaded_file in uploaded_files:
+            progress_bar.progress(uploaded_files.index(uploaded_file) / len(uploaded_files) * 100)
             # Get file extension
             file_extension = os.path.splitext(uploaded_file.name)[1].lower()
-            
+
             # Create a temporary file to store the uploaded file
             with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
                 temp_file.write(uploaded_file.getvalue())
                 temp_file_path = temp_file.name
-            
+
             try:
                 # Extract text based on file type
                 if file_extension == '.pdf':
@@ -142,14 +146,14 @@ if process_button and uploaded_files and job_description:
                     resume_text = extract_text_from_docx(temp_file_path)
                 else:
                     continue  # Skip unsupported file types
-                
+
                 # Preprocess the resume text
                 preprocessed_text = preprocess_text(resume_text)
-                
+
                 # Extract skills and entities from the resume
                 resume_skills = extract_skills(preprocessed_text)
                 resume_entities = extract_entities(preprocessed_text)
-                
+
                 # Calculate similarity score
                 similarity_score = calculate_similarity(
                     preprocessed_jd, 
@@ -157,20 +161,20 @@ if process_button and uploaded_files and job_description:
                     job_skills,
                     resume_skills
                 )
-                
+
                 # Determine matching skills
                 matching_skills = list(set(job_skills) & set(resume_skills))
-                
+
                 # Get candidate name (use the first person entity or filename if none found)
                 candidate_name = None
                 for entity in resume_entities:
                     if entity[1] == 'PERSON':
                         candidate_name = entity[0]
                         break
-                
+
                 if not candidate_name:
                     candidate_name = os.path.splitext(uploaded_file.name)[0]
-                
+
                 # Add to resumes data
                 resumes_data.append({
                     'filename': uploaded_file.name,
@@ -182,46 +186,48 @@ if process_button and uploaded_files and job_description:
                     'similarity_score': similarity_score,
                     'match_percentage': int(similarity_score * 100)
                 })
-            
+
             except Exception as e:
                 st.error(f"Error processing {uploaded_file.name}: {str(e)}")
-            
+
             finally:
                 # Remove the temporary file
                 os.unlink(temp_file_path)
-        
-        if resumes_data:
+
+        if not resumes_data:
+            st.error("No resumes were successfully processed. Please check your files and try again.")
+        else:
+            status_text.text("✅ Processing complete!")
+            progress_bar.progress(100)
             # Rank the resumes
             ranked_resumes = rank_resumes(resumes_data)
             st.session_state.processed_resumes = resumes_data
             st.session_state.ranked_resumes = ranked_resumes
             st.success(f"Successfully processed {len(resumes_data)} resumes!")
-        else:
-            st.warning("No resumes were successfully processed.")
 
 # Display results if available
 if st.session_state.ranked_resumes and st.session_state.job_skills:
     st.header("Resume Ranking Results")
-    
+
     # Get the ranked resumes
     ranked_resumes = st.session_state.ranked_resumes
     job_skills = st.session_state.job_skills
-    
+
     # Filter by minimum match percentage
     filtered_resumes = [r for r in ranked_resumes if r['match_percentage'] >= min_skill_match]
-    
+
     # Take only top N
     top_resumes = filtered_resumes[:top_n]
-    
+
     if not top_resumes:
         st.warning(f"No resumes meet the minimum skill match criteria of {min_skill_match}%.")
     else:
         # Display results in columns
         col1, col2 = st.columns([2, 1])
-        
+
         with col1:
             st.subheader("Top Candidates")
-            
+
             # Create a DataFrame for display
             display_data = [{
                 'Candidate': resume['candidate_name'],
@@ -229,19 +235,19 @@ if st.session_state.ranked_resumes and st.session_state.job_skills:
                 'Matching Skills': ', '.join(resume['matching_skills'][:5]) + 
                                  ('...' if len(resume['matching_skills']) > 5 else '')
             } for resume in top_resumes]
-            
+
             df_display = pd.DataFrame(display_data)
             st.dataframe(df_display, use_container_width=True)
-            
+
             # Detailed candidate view
             st.subheader("Candidate Details")
             for i, resume in enumerate(top_resumes):
                 with st.expander(f"{i+1}. {resume['candidate_name']} ({resume['match_percentage']}% match)"):
                     display_resume_details(resume)
-        
+
         with col2:
             st.subheader("Visualizations")
-            
+
             # Bar chart of top candidates
             fig1 = px.bar(
                 display_data, 
@@ -254,12 +260,12 @@ if st.session_state.ranked_resumes and st.session_state.job_skills:
                 color_continuous_scale='viridis'
             )
             st.plotly_chart(fig1, use_container_width=True)
-            
+
             # Keywords frequency analysis
             if job_skills:
                 st.subheader("Top Required Skills")
                 top_kw = get_top_keywords(ranked_resumes, job_skills)
-                
+
                 fig2 = px.bar(
                     top_kw, 
                     x='frequency', 

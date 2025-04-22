@@ -1,6 +1,5 @@
 [tool.uv.sources]
 coola = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
-}]
 irisml = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
 compressai = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
 irisml-tasks-azure-openai = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]

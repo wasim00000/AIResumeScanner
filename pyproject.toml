@@ -1,3 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-resume-scanner"
+version = "0.1.0"
+authors = [
+  { name = "Developer", email = "dev@example.com" },
+]
+description = "AI-Powered Resume Scanner"
+requires-python = ">=3.8"
+dependencies = [
+  "streamlit",
+  "PyPDF2",
+  "python-docx",
+  "scikit-learn",
+  "spacy",
+  "matplotlib",
+  "pandas",
+  "plotly",
+  "numpy",
+  "sqlalchemy",
+  "psycopg2-binary",
+]
+
 [tool.uv.sources]
 coola = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
 irisml = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]

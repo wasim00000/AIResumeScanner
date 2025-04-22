@@ -1,90 +1,39 @@
 import os
-import psycopg2
-from psycopg2 import sql
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import json
 import logging
+import datetime
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Database connection parameters from environment variables
-db_params = {
-    'dbname': os.environ.get('PGDATABASE', 'postgres'),
-    'user': os.environ.get('PGUSER', 'postgres'),
-    'password': os.environ.get('PGPASSWORD', ''),
-    'host': os.environ.get('PGHOST', 'localhost'),
-    'port': os.environ.get('PGPORT', '5432')
-}
+# Create a data directory if it doesn't exist
+DATA_DIR = Path("./data")
+if not DATA_DIR.exists():
+    DATA_DIR.mkdir(parents=True)
 
-def get_db_connection():
-    """
-    Create a connection to the PostgreSQL database
-    
-    Returns:
-        connection: A PostgreSQL database connection
-    """
-    try:
-        conn = psycopg2.connect(**db_params)
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        return conn
-    except Exception as e:
-        logger.error(f"Error connecting to the database: {str(e)}")
-        raise
+# Initialize database files
+JOB_DESCRIPTIONS_FILE = DATA_DIR / "job_descriptions.json"
+RESUMES_FILE = DATA_DIR / "resumes.json"
+ANALYSIS_RESULTS_FILE = DATA_DIR / "analysis_results.json"
 
-def create_tables():
-    """
-    Create the necessary tables if they don't exist
-    """
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Create job_descriptions table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS job_descriptions (
-            id SERIAL PRIMARY KEY,
-            description TEXT NOT NULL,
-            skills TEXT[],
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        
-        # Create resumes table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS resumes (
-            id SERIAL PRIMARY KEY,
-            filename TEXT NOT NULL,
-            candidate_name TEXT,
-            text TEXT NOT NULL,
-            skills TEXT[],
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        
-        # Create analysis_results table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS analysis_results (
-            id SERIAL PRIMARY KEY,
-            job_id INTEGER REFERENCES job_descriptions(id),
-            resume_id INTEGER REFERENCES resumes(id),
-            similarity_score FLOAT NOT NULL,
-            matching_skills TEXT[],
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        
-        cursor.close()
-        conn.close()
-        
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.error(f"Error creating database tables: {str(e)}")
-        raise
+# Initialize empty data structures if files don't exist
+if not JOB_DESCRIPTIONS_FILE.exists():
+    with open(JOB_DESCRIPTIONS_FILE, 'w') as f:
+        json.dump([], f)
+
+if not RESUMES_FILE.exists():
+    with open(RESUMES_FILE, 'w') as f:
+        json.dump([], f)
+
+if not ANALYSIS_RESULTS_FILE.exists():
+    with open(ANALYSIS_RESULTS_FILE, 'w') as f:
+        json.dump([], f)
 
 def save_job_description(description, skills):
     """
-    Save a job description to the database
+    Save a job description to the JSON file
     
     Args:
         description (str): The job description text
@@ -94,27 +43,38 @@ def save_job_description(description, skills):
         int: The ID of the inserted job description
     """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Read existing data
+        with open(JOB_DESCRIPTIONS_FILE, 'r') as f:
+            job_descriptions = json.load(f)
         
-        cursor.execute(
-            "INSERT INTO job_descriptions (description, skills) VALUES (%s, %s) RETURNING id",
-            (description, skills)
-        )
+        # Generate new ID
+        new_id = 1
+        if job_descriptions:
+            new_id = max([jd.get('id', 0) for jd in job_descriptions]) + 1
         
-        job_id = cursor.fetchone()[0]
+        # Create job description record
+        job_description = {
+            'id': new_id,
+            'description': description,
+            'skills': skills,
+            'created_at': datetime.datetime.now().isoformat()
+        }
         
-        cursor.close()
-        conn.close()
+        # Add to list and save
+        job_descriptions.append(job_description)
+        with open(JOB_DESCRIPTIONS_FILE, 'w') as f:
+            json.dump(job_descriptions, f, indent=2)
         
-        return job_id
+        logger.info(f"Job description saved with ID: {new_id}")
+        return new_id
+        
     except Exception as e:
         logger.error(f"Error saving job description: {str(e)}")
         raise
 
 def save_resume(filename, candidate_name, text, skills):
     """
-    Save a resume to the database
+    Save a resume to the JSON file
     
     Args:
         filename (str): Original filename of the resume
@@ -126,27 +86,40 @@ def save_resume(filename, candidate_name, text, skills):
         int: The ID of the inserted resume
     """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Read existing data
+        with open(RESUMES_FILE, 'r') as f:
+            resumes = json.load(f)
         
-        cursor.execute(
-            "INSERT INTO resumes (filename, candidate_name, text, skills) VALUES (%s, %s, %s, %s) RETURNING id",
-            (filename, candidate_name, text, skills)
-        )
+        # Generate new ID
+        new_id = 1
+        if resumes:
+            new_id = max([r.get('id', 0) for r in resumes]) + 1
         
-        resume_id = cursor.fetchone()[0]
+        # Create resume record
+        resume = {
+            'id': new_id,
+            'filename': filename,
+            'candidate_name': candidate_name,
+            'text': text,
+            'skills': skills,
+            'created_at': datetime.datetime.now().isoformat()
+        }
         
-        cursor.close()
-        conn.close()
+        # Add to list and save
+        resumes.append(resume)
+        with open(RESUMES_FILE, 'w') as f:
+            json.dump(resumes, f, indent=2)
         
-        return resume_id
+        logger.info(f"Resume saved with ID: {new_id}")
+        return new_id
+        
     except Exception as e:
         logger.error(f"Error saving resume: {str(e)}")
         raise
 
 def save_analysis_result(job_id, resume_id, similarity_score, matching_skills):
     """
-    Save an analysis result to the database
+    Save an analysis result to the JSON file
     
     Args:
         job_id (int): ID of the job description
@@ -158,27 +131,40 @@ def save_analysis_result(job_id, resume_id, similarity_score, matching_skills):
         int: The ID of the inserted analysis result
     """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Read existing data
+        with open(ANALYSIS_RESULTS_FILE, 'r') as f:
+            analysis_results = json.load(f)
         
-        cursor.execute(
-            "INSERT INTO analysis_results (job_id, resume_id, similarity_score, matching_skills) VALUES (%s, %s, %s, %s) RETURNING id",
-            (job_id, resume_id, similarity_score, matching_skills)
-        )
+        # Generate new ID
+        new_id = 1
+        if analysis_results:
+            new_id = max([ar.get('id', 0) for ar in analysis_results]) + 1
         
-        result_id = cursor.fetchone()[0]
+        # Create analysis result record
+        analysis_result = {
+            'id': new_id,
+            'job_id': job_id,
+            'resume_id': resume_id,
+            'similarity_score': similarity_score,
+            'matching_skills': matching_skills,
+            'created_at': datetime.datetime.now().isoformat()
+        }
         
-        cursor.close()
-        conn.close()
+        # Add to list and save
+        analysis_results.append(analysis_result)
+        with open(ANALYSIS_RESULTS_FILE, 'w') as f:
+            json.dump(analysis_results, f, indent=2)
         
-        return result_id
+        logger.info(f"Analysis result saved with ID: {new_id}")
+        return new_id
+        
     except Exception as e:
         logger.error(f"Error saving analysis result: {str(e)}")
         raise
 
 def get_previous_analyses(limit=10):
     """
-    Get previous analyses from the database
+    Get previous analyses from the JSON files
     
     Args:
         limit (int): Maximum number of analyses to return
@@ -187,51 +173,41 @@ def get_previous_analyses(limit=10):
         list: List of dictionaries containing analysis data
     """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Read data from files
+        with open(ANALYSIS_RESULTS_FILE, 'r') as f:
+            analysis_results = json.load(f)
         
-        cursor.execute("""
-        SELECT 
-            ar.id, 
-            jd.description, 
-            r.candidate_name, 
-            r.filename,
-            ar.similarity_score,
-            ar.matching_skills,
-            ar.created_at
-        FROM 
-            analysis_results ar
-        JOIN 
-            job_descriptions jd ON ar.job_id = jd.id
-        JOIN 
-            resumes r ON ar.resume_id = r.id
-        ORDER BY 
-            ar.created_at DESC
-        LIMIT %s
-        """, (limit,))
+        with open(JOB_DESCRIPTIONS_FILE, 'r') as f:
+            job_descriptions = json.load(f)
+            # Create dictionary for faster lookup
+            job_dict = {jd['id']: jd for jd in job_descriptions}
         
+        with open(RESUMES_FILE, 'r') as f:
+            resumes = json.load(f)
+            # Create dictionary for faster lookup
+            resume_dict = {r['id']: r for r in resumes}
+        
+        # Build the analysis data with joined information
         analyses = []
-        for row in cursor.fetchall():
-            analyses.append({
-                'id': row[0],
-                'description': row[1],
-                'candidate_name': row[2],
-                'filename': row[3],
-                'similarity_score': row[4],
-                'matching_skills': row[5],
-                'created_at': row[6]
-            })
+        for ar in analysis_results:
+            job = job_dict.get(ar['job_id'])
+            resume = resume_dict.get(ar['resume_id'])
+            
+            if job and resume:
+                analyses.append({
+                    'id': ar['id'],
+                    'description': job['description'],
+                    'candidate_name': resume['candidate_name'],
+                    'filename': resume['filename'],
+                    'similarity_score': ar['similarity_score'],
+                    'matching_skills': ar['matching_skills'],
+                    'created_at': ar['created_at']
+                })
         
-        cursor.close()
-        conn.close()
+        # Sort by created_at (newest first) and limit
+        analyses.sort(key=lambda x: x['created_at'], reverse=True)
+        return analyses[:limit]
         
-        return analyses
     except Exception as e:
         logger.error(f"Error retrieving previous analyses: {str(e)}")
         return []
-
-# Create tables when the module is imported
-try:
-    create_tables()
-except Exception as e:
-    logger.error(f"Failed to create database tables: {str(e)}")

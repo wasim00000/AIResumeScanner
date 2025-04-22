@@ -5,11 +5,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 from io import BytesIO
+import logging
 
 from resume_parser import extract_text_from_pdf, extract_text_from_docx
 from nlp_processor import preprocess_text, extract_skills, extract_entities
 from ranking_system import calculate_similarity, rank_resumes
 from utils import display_resume_details, get_top_keywords
+from database import (
+    save_job_description, 
+    save_resume, 
+    save_analysis_result, 
+    get_previous_analyses
+)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Set page configuration
 st.set_page_config(
@@ -68,9 +79,13 @@ st.markdown("""
         <li>Analyze multiple resumes simultaneously</li>
         <li>Get detailed skill matching and ranking results</li>
         <li>Visualize candidate comparisons</li>
+        <li>Save and access previous analysis results</li>
     </ul>
 </div>
 """, unsafe_allow_html=True)
+
+# Add tab views for Resume Analysis and History
+tab1, tab2 = st.tabs(["Resume Analysis", "Analysis History"])
 
 # Create sidebar for inputs
 with st.sidebar:
@@ -126,6 +141,14 @@ if process_button and uploaded_files and job_description:
         job_entities = extract_entities(preprocessed_jd)
 
         st.session_state.job_skills = job_skills
+        
+        # Save job description to database
+        try:
+            job_id = save_job_description(job_description, job_skills)
+            logger.info(f"Job description saved with ID: {job_id}")
+        except Exception as e:
+            logger.error(f"Failed to save job description: {str(e)}")
+            job_id = None
 
         # Process each uploaded resume
         for uploaded_file in uploaded_files:
@@ -186,6 +209,29 @@ if process_button and uploaded_files and job_description:
                     'similarity_score': similarity_score,
                     'match_percentage': int(similarity_score * 100)
                 })
+                
+                # Save resume and analysis result to database
+                if job_id:
+                    try:
+                        # Save resume
+                        resume_id = save_resume(
+                            uploaded_file.name,
+                            candidate_name,
+                            resume_text,
+                            resume_skills
+                        )
+                        
+                        # Save analysis result
+                        result_id = save_analysis_result(
+                            job_id,
+                            resume_id,
+                            similarity_score,
+                            matching_skills
+                        )
+                        
+                        logger.info(f"Resume and analysis saved: {resume_id}, {result_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to save resume or analysis: {str(e)}")
 
             except Exception as e:
                 st.error(f"Error processing {uploaded_file.name}: {str(e)}")
@@ -205,84 +251,132 @@ if process_button and uploaded_files and job_description:
             st.session_state.ranked_resumes = ranked_resumes
             st.success(f"Successfully processed {len(resumes_data)} resumes!")
 
-# Display results if available
-if st.session_state.ranked_resumes and st.session_state.job_skills:
-    st.header("Resume Ranking Results")
-
-    # Get the ranked resumes
-    ranked_resumes = st.session_state.ranked_resumes
-    job_skills = st.session_state.job_skills
-
-    # Filter by minimum match percentage
-    filtered_resumes = [r for r in ranked_resumes if r['match_percentage'] >= min_skill_match]
-
-    # Take only top N
-    top_resumes = filtered_resumes[:top_n]
-
-    if not top_resumes:
-        st.warning(f"No resumes meet the minimum skill match criteria of {min_skill_match}%.")
-    else:
-        # Display results in columns
-        col1, col2 = st.columns([2, 1])
-
-        with col1:
-            st.subheader("Top Candidates")
-
-            # Create a DataFrame for display
-            display_data = [{
-                'Candidate': resume['candidate_name'],
-                'Match %': resume['match_percentage'],
-                'Matching Skills': ', '.join(resume['matching_skills'][:5]) + 
-                                 ('...' if len(resume['matching_skills']) > 5 else '')
-            } for resume in top_resumes]
-
-            df_display = pd.DataFrame(display_data)
-            st.dataframe(df_display, use_container_width=True)
-
-            # Detailed candidate view
-            st.subheader("Candidate Details")
-            for i, resume in enumerate(top_resumes):
-                with st.expander(f"{i+1}. {resume['candidate_name']} ({resume['match_percentage']}% match)"):
-                    display_resume_details(resume)
-
-        with col2:
-            st.subheader("Visualizations")
-
-            # Bar chart of top candidates
-            fig1 = px.bar(
-                display_data, 
-                x='Match %', 
-                y='Candidate', 
-                orientation='h',
-                title='Resume Match Percentages',
-                labels={'x': 'Match Percentage (%)', 'y': 'Candidate'},
-                color='Match %',
-                color_continuous_scale='viridis'
-            )
-            st.plotly_chart(fig1, use_container_width=True)
-
-            # Keywords frequency analysis
-            if job_skills:
-                st.subheader("Top Required Skills")
-                top_kw = get_top_keywords(ranked_resumes, job_skills)
-
-                fig2 = px.bar(
-                    top_kw, 
-                    x='frequency', 
-                    y='keyword',
+# Use tabs to split content
+with tab1:
+    # Display results if available
+    if st.session_state.ranked_resumes and st.session_state.job_skills:
+        st.header("Resume Ranking Results")
+    
+        # Get the ranked resumes
+        ranked_resumes = st.session_state.ranked_resumes
+        job_skills = st.session_state.job_skills
+    
+        # Filter by minimum match percentage
+        filtered_resumes = [r for r in ranked_resumes if r['match_percentage'] >= min_skill_match]
+    
+        # Take only top N
+        top_resumes = filtered_resumes[:top_n]
+    
+        if not top_resumes:
+            st.warning(f"No resumes meet the minimum skill match criteria of {min_skill_match}%.")
+        else:
+            # Display results in columns
+            col1, col2 = st.columns([2, 1])
+    
+            with col1:
+                st.subheader("Top Candidates")
+    
+                # Create a DataFrame for display
+                display_data = [{
+                    'Candidate': resume['candidate_name'],
+                    'Match %': resume['match_percentage'],
+                    'Matching Skills': ', '.join(resume['matching_skills'][:5]) + 
+                                     ('...' if len(resume['matching_skills']) > 5 else '')
+                } for resume in top_resumes]
+    
+                df_display = pd.DataFrame(display_data)
+                st.dataframe(df_display, use_container_width=True)
+    
+                # Detailed candidate view
+                st.subheader("Candidate Details")
+                for i, resume in enumerate(top_resumes):
+                    with st.expander(f"{i+1}. {resume['candidate_name']} ({resume['match_percentage']}% match)"):
+                        display_resume_details(resume)
+    
+            with col2:
+                st.subheader("Visualizations")
+    
+                # Bar chart of top candidates
+                fig1 = px.bar(
+                    display_data, 
+                    x='Match %', 
+                    y='Candidate', 
                     orientation='h',
-                    title='Most Common Skills in Top Resumes',
-                    labels={'frequency': 'Frequency', 'keyword': 'Skill'},
-                    color='frequency',
+                    title='Resume Match Percentages',
+                    labels={'x': 'Match Percentage (%)', 'y': 'Candidate'},
+                    color='Match %',
                     color_continuous_scale='viridis'
                 )
-                st.plotly_chart(fig2, use_container_width=True)
+                st.plotly_chart(fig1, use_container_width=True)
+    
+                # Keywords frequency analysis
+                if job_skills:
+                    st.subheader("Top Required Skills")
+                    top_kw = get_top_keywords(ranked_resumes, job_skills)
+    
+                    fig2 = px.bar(
+                        top_kw, 
+                        x='frequency', 
+                        y='keyword',
+                        orientation='h',
+                        title='Most Common Skills in Top Resumes',
+                        labels={'frequency': 'Frequency', 'keyword': 'Skill'},
+                        color='frequency',
+                        color_continuous_scale='viridis'
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+    
+    else:
+        if not process_button:
+            # Display instructions
+            st.info("Please upload resume files and enter a job description, then click 'Analyze Resumes'.")
+        elif not uploaded_files:
+            st.warning("Please upload at least one resume file.")
+        elif not job_description:
+            st.warning("Please enter a job description.")
 
-else:
-    if not process_button:
-        # Display instructions
-        st.info("Please upload resume files and enter a job description, then click 'Analyze Resumes'.")
-    elif not uploaded_files:
-        st.warning("Please upload at least one resume file.")
-    elif not job_description:
-        st.warning("Please enter a job description.")
+# Analysis History Tab
+with tab2:
+    st.header("Previous Analyses")
+    
+    # Get previous analyses from the database
+    try:
+        previous_analyses = get_previous_analyses(limit=20)
+        
+        if not previous_analyses:
+            st.info("No previous analyses found. Once you analyze resumes, they will appear here.")
+        else:
+            # Create DataFrame for display
+            history_data = [{
+                'Date': analysis['created_at'].split('T')[0] if 'T' in analysis['created_at'] else analysis['created_at'].split(' ')[0],
+                'Candidate': analysis['candidate_name'],
+                'Match %': int(analysis['similarity_score'] * 100),
+                'Resume File': analysis['filename']
+            } for analysis in previous_analyses]
+            
+            hist_df = pd.DataFrame(history_data)
+            st.dataframe(hist_df, use_container_width=True)
+            
+            # Display more details for selected analyses
+            st.subheader("Analysis Details")
+            
+            for i, analysis in enumerate(previous_analyses):
+                matching_skills = analysis.get('matching_skills', [])
+                score = int(analysis['similarity_score'] * 100)
+                
+                with st.expander(f"{i+1}. {analysis['candidate_name']} - {score}% match"):
+                    st.write(f"**Resume File:** {analysis['filename']}")
+                    st.write(f"**Analysis Date:** {analysis['created_at']}")
+                    
+                    st.write("**Job Description:**")
+                    st.text_area("", analysis['description'][:500] + "...", height=100)
+                    
+                    st.write("**Matching Skills:**")
+                    if matching_skills:
+                        for skill in matching_skills:
+                            st.write(f"- {skill}")
+                    else:
+                        st.write("No matching skills found")
+    
+    except Exception as e:
+        st.error(f"Error loading previous analyses: {str(e)}")

@@ -129,7 +129,7 @@ if process_button and uploaded_files and job_description:
 
         # Process each uploaded resume
         for uploaded_file in uploaded_files:
-            progress_bar.progress(uploaded_files.index(uploaded_file) / len(uploaded_files) * 100)
+            progress_bar.progress((uploaded_files.index(uploaded_file) + 1) / len(uploaded_files))
             # Get file extension
             file_extension = os.path.splitext(uploaded_file.name)[1].lower()
 

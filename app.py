@@ -87,36 +87,43 @@ st.markdown("""
 # Add tab views for Resume Analysis and History
 tab1, tab2 = st.tabs(["Resume Analysis", "Analysis History"])
 
-# Create sidebar for inputs
-with st.sidebar:
+# Main page controls
+with tab1:
     st.markdown("""
         <div style='text-align: center; padding: 1rem; background-color: #1f67b1; color: white; border-radius: 5px; margin-bottom: 2rem;'>
             <h2 style='margin: 0;'>Analysis Controls</h2>
         </div>
     """, unsafe_allow_html=True)
-
-    # Job Description Input
-    st.markdown("<h3 style='color: #1f67b1;'>📝 Job Description</h3>", unsafe_allow_html=True)
-    job_description = st.text_area("Enter the job requirements:", height=200,
-                                 help="Paste the job description here. The more detailed it is, the better the matching will be.")
-
-    # Resume File Upload
-    st.markdown("<h3 style='color: #1f67b1; margin-top: 2rem;'>📎 Resume Upload</h3>", unsafe_allow_html=True)
-    uploaded_files = st.file_uploader("Drop your resumes here (PDF/DOCX)", 
-                                    type=["pdf", "docx"], 
-                                    accept_multiple_files=True,
-                                    help="You can upload multiple resumes at once")
-
-    # Analysis Settings
-    st.markdown("<h3 style='color: #1f67b1; margin-top: 2rem;'>⚙️ Settings</h3>", unsafe_allow_html=True)
-    min_skill_match = st.slider("Minimum Skill Match %", 0, 100, 50,
-                               help="Filter out candidates below this match percentage")
-    top_n = st.slider("Show Top N Candidates", 1, 20, 5,
-                      help="Number of top candidates to display")
-
-    # Process Button
-    st.markdown("<br>", unsafe_allow_html=True)
-    process_button = st.button("🔍 Analyze Resumes", use_container_width=True)
+    
+    # Create columns for input controls
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        # Job Description Input
+        st.markdown("<h3 style='color: #1f67b1;'>📝 Job Description</h3>", unsafe_allow_html=True)
+        job_description = st.text_area("Enter the job requirements:", height=200,
+                                     help="Paste the job description here. The more detailed it is, the better the matching will be.")
+    
+    with col2:
+        # Resume File Upload
+        st.markdown("<h3 style='color: #1f67b1;'>📎 Resume Upload</h3>", unsafe_allow_html=True)
+        uploaded_files = st.file_uploader("Drop your resumes here (PDF/DOCX)", 
+                                        type=["pdf", "docx"], 
+                                        accept_multiple_files=True,
+                                        help="You can upload multiple resumes at once")
+        
+        # Analysis Settings
+        st.markdown("<h3 style='color: #1f67b1; margin-top: 1rem;'>⚙️ Settings</h3>", unsafe_allow_html=True)
+        min_skill_match = st.slider("Minimum Skill Match %", 0, 100, 50,
+                                  help="Filter out candidates below this match percentage")
+        top_n = st.slider("Show Top N Candidates", 1, 20, 5,
+                         help="Number of top candidates to display")
+    
+    # Process Button (centered)
+    col3, col4, col5 = st.columns([1, 2, 1])
+    with col4:
+        st.markdown("<br>", unsafe_allow_html=True)
+        process_button = st.button("🔍 Analyze Resumes", use_container_width=True)
 
 # Initialize session state if not already done
 if 'processed_resumes' not in st.session_state:
@@ -251,10 +258,9 @@ if process_button and uploaded_files and job_description:
             st.session_state.ranked_resumes = ranked_resumes
             st.success(f"Successfully processed {len(resumes_data)} resumes!")
 
-# Use tabs to split content
-with tab1:
-    # Display results if available
-    if st.session_state.ranked_resumes and st.session_state.job_skills:
+# Show results in the Analysis tab if available
+if st.session_state.ranked_resumes and st.session_state.job_skills:
+    with tab1:
         st.header("Resume Ranking Results")
     
         # Get the ranked resumes
@@ -326,7 +332,8 @@ with tab1:
                     )
                     st.plotly_chart(fig2, use_container_width=True)
     
-    else:
+else:
+    with tab1:
         if not process_button:
             # Display instructions
             st.info("Please upload resume files and enter a job description, then click 'Analyze Resumes'.")

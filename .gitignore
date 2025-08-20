@@ -38,6 +38,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Environment
+.env
+
 # Docker
 *.pid
 

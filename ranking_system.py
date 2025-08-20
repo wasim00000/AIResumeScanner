@@ -1,4 +1,3 @@
-import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -18,17 +17,22 @@ def calculate_similarity(job_description, resume_text, job_skills, resume_skills
     """
     # Calculate text similarity using TF-IDF and cosine similarity
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    
+
     # Create a corpus with just the two documents
     corpus = [job_description, resume_text]
-    
+
     # Create the TF-IDF matrix
     try:
         tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
-        
-        # Calculate cosine similarity
-        cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-    except:
+
+        # Convert sparse TF-IDF matrix to dense array for reliable indexing
+        # (safe for small corpus of two documents)
+        tfidf_array = tfidf_matrix.toarray()  # type: ignore[attr-defined]
+
+        # Calculate cosine similarity between the two vectors using numpy array slices
+        # Use [0:1] style to keep 2D shape expected by sklearn's cosine_similarity
+        cosine_sim = float(cosine_similarity(tfidf_array[0:1], tfidf_array[1:2])[0][0])
+    except Exception:
         # If TF-IDF fails (e.g., one text is too short), use a fallback
         cosine_sim = 0.0
     

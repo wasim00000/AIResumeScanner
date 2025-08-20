@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Venv
+.venv/
+
+# Node / front
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Data and caches (keep data at host volume instead)
+*.sqlite
+*.db
+*.log
+*.lock
+
+# Streamlit cached artifacts
+.streamlit/**
+!/.streamlit/config.toml
+
+# OS
+.DS_Store
+Thumbs.db

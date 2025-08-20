@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AI Resume Scanner — Documentation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0b1220; --text: #e6eefc; --muted: #9fb3d9; --surface: #121a2a; --primary: #66a3ff;
+  }
+  body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+  h1, h2, h3 { color: var(--primary); }
+  a { color: var(--primary); }
+  code, pre { background: #0f1a30; color: var(--text); padding: .2rem .35rem; border-radius: 4px; }
+  pre { padding: .75rem; overflow: auto; }
+  .card { background: var(--surface); border: 1px solid #243144; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.2); padding: 1rem; margin-bottom: 1rem; }
+  @media print {
+    body { background: #fff; color: #000; }
+    .card { box-shadow: none; border-color: #ddd; }
+    a { color: #0056b3; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Resume Scanner — Documentation</h1>
+    <p>Version: 2025-08-17</p>
+
+    <div class="card">
+      <h2>Overview</h2>
+      <p>The AI Resume Scanner analyzes and ranks resumes against a job description using NLP, providing interactive charts and an AI shortlisting assistant within a modern dark-themed Streamlit UI.</p>
+    </div>
+
+    <div class="card">
+      <h2>Features</h2>
+      <ul>
+        <li>Upload multiple resumes (PDF/DOCX), parse text, extract skills/entities</li>
+        <li>TF‑IDF similarity with skill matching and ranking</li>
+        <li>Plotly charts (dark theme) for matches and skills</li>
+        <li>Assistant with quick prompts, context toggles, and export</li>
+        <li>JSON persistence, no external database required</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Setup (Windows PowerShell)</h2>
+      <ol>
+        <li>Create and activate a venv</li>
+      </ol>
+      <pre><code>python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip</code></pre>
+      <ol start="2">
+        <li>Install dependencies</li>
+      </ol>
+      <pre><code>pip install -r requirements.txt</code></pre>
+      <ol start="3">
+        <li>Run the app</li>
+      </ol>
+      <pre><code>.\.venv\Scripts\python -m streamlit run .\app.py --server.port 8502</code></pre>
+      <p>Open <a href="http://localhost:8502">http://localhost:8502</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Usage</h2>
+      <ol>
+        <li>Paste a job description</li>
+        <li>Upload one or more resumes (PDF/DOCX)</li>
+        <li>Adjust filters (minimum match, top N)</li>
+        <li>Review results and charts</li>
+        <li>Use the assistant to compare, list skills, or summarize</li>
+        <li>Browse Analysis History</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Configuration</h2>
+      <ul>
+        <li><code>.streamlit/config.toml</code>: theme and server (port/address)</li>
+        <li>Data files in <code>data/</code>, stored as JSON</li>
+        <li>No API keys required; assistant uses public endpoint with fallback</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Modules</h2>
+      <ul>
+        <li><strong>app.py</strong> — UI orchestration, dark theme, assistant panel</li>
+        <li><strong>ranking_system.py</strong> — TF‑IDF + cosine similarity, ranking</li>
+        <li><strong>resume_parser.py</strong> — PDF/DOCX text extraction</li>
+        <li><strong>nlp_processor.py</strong> — preprocessing, skills/entities</li>
+        <li><strong>utils.py</strong> — AI call + helpers</li>
+        <li><strong>database.py</strong> — JSON persistence helpers</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Data Formats</h2>
+      <p>See <code>docs/DATA_FORMATS.md</code> for full JSON examples.</p>
+    </div>
+
+    <div class="card">
+      <h2>Troubleshooting</h2>
+      <ul>
+        <li>Activate venv and reinstall if modules are missing</li>
+        <li>Change port if 8502 is busy</li>
+        <li>Use text-based PDFs (OCR if needed)</li>
+        <li>Assistant will fall back to rule-based if network is unavailable</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Security & Privacy</h2>
+      <ul>
+        <li>Local processing by default; data stored under <code>data/</code></li>
+        <li>Avoid sensitive PII; clear data regularly</li>
+        <li>Public inference call can be disabled in <code>utils.py</code></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Changelog</h2>
+      <p>2025-08-17 — Dark theme, sticky assistant, improved ranking, full docs.</p>
+    </div>
+
+    <p style="opacity:.7">© 2025 AI Resume Scanner — All Rights Reserved</p>
+  </div>
+</body>
+</html>

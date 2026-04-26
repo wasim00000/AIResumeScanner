@@ -2,6 +2,8 @@
 
 A Streamlit-based application that analyzes and ranks resumes against a job description using NLP and skill matching. It provides interactive visualizations, an AI shortlisting assistant, and a modern dark-themed UI.
 
+Live app: [airesumescanner-00.streamlit.app](https://airesumescanner-00.streamlit.app/)
+
 ## Features
 
 - Upload multiple PDFs/DOCX resumes, parse text, and extract skills/entities

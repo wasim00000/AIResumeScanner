@@ -33,6 +33,7 @@ def ensure_session_defaults():
     "job_requirements": None,
     "ranked_resumes": None,
     "messages": [],
+    "job_description_input": "",
   }
   for key, default in defaults.items():
     if key not in st.session_state:
@@ -85,6 +86,54 @@ def render_metric_card(label, value, note):
     {note_html}
   </div>
   """
+
+
+QUICK_MATCH_PRESETS = {
+  "Data Analyst": """Data Analyst
+
+Responsibilities:
+- Analyze product and business data to identify trends and opportunities
+- Build dashboards and reports for leadership and operations
+- Write SQL queries for analysis and ad hoc reporting
+
+Required skills:
+- SQL, Python, Excel
+- Power BI or Tableau
+- Statistics, dashboards, data visualization
+- Clear communication and stakeholder support
+
+Preferred skills:
+- ETL, A/B testing, KPI analysis, forecasting""",
+  "Full-Stack Developer": """Full-Stack Developer
+
+Responsibilities:
+- Build and maintain web app features across frontend and backend
+- Work with APIs, databases, and deployment pipelines
+- Review code, fix bugs, and improve app performance
+
+Required skills:
+- JavaScript or TypeScript, React
+- Node.js or Python
+- SQL, PostgreSQL
+- Git, Docker, CI/CD
+
+Preferred skills:
+- REST APIs, testing, AWS, Kubernetes""",
+  "Project Manager": """Project Manager
+
+Responsibilities:
+- Plan and coordinate delivery across teams and timelines
+- Track milestones, risks, and stakeholder updates
+- Translate business needs into clear project requirements
+
+Required skills:
+- Project planning, roadmap execution
+- Agile or Scrum
+- Communication, reporting, stakeholder management
+
+Preferred skills:
+- Jira, Confluence, budgeting, cross-functional leadership""",
+}
 
 # Set page configuration
 st.set_page_config(
@@ -400,11 +449,18 @@ with tab1:
       </div>
     """, unsafe_allow_html=True)
 
+    st.markdown("<div class='muted' style='margin: .2rem 0 .35rem 0;'>Quick match scripts</div>", unsafe_allow_html=True)
+    preset_cols = st.columns(3)
+    for preset_col, preset_name in zip(preset_cols, QUICK_MATCH_PRESETS.keys()):
+      if preset_col.button(preset_name, key=f"preset_{preset_name.lower().replace(' ', '_')}", use_container_width=True):
+        st.session_state.job_description_input = QUICK_MATCH_PRESETS[preset_name]
+
     job_description = st.text_area(
       "Job description",
       height=170,
       placeholder="Paste the role brief here...",
-      label_visibility="collapsed"
+      label_visibility="collapsed",
+      key="job_description_input"
     )
 
   with col2:

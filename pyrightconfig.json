@@ -1,0 +1,7 @@
+{
+    "venvPath": ".",
+    "pythonPath": "%APPDATA%/Python/Python312/python.exe",
+    "extraPaths": [
+        "%APPDATA%/Python/Python312/site-packages"
+    ]
+}

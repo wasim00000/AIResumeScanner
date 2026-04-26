@@ -440,7 +440,7 @@ with tab1:
   # Process Button (centered with enhanced styling)
   col3, col4, col5 = st.columns([1, 2, 1])
   with col4:
-    process_button = st.button("Analyze", width="stretch")
+    process_button = st.button("Analyze", use_container_width=True)
 
 # Process the uploaded resumes
 if process_button and (not uploaded_files or not job_description.strip()):
@@ -688,7 +688,7 @@ if st.session_state.get("ranked_resumes"):
         color_continuous_scale=px.colors.sequential.Blues
       )
       fig_match.update_layout(xaxis_title=None, yaxis_title="Match %", showlegend=False)
-      st.plotly_chart(fig_match, width="stretch")
+      st.plotly_chart(fig_match, use_container_width=True)
 
     with viz_col2:
       # Bar chart for number of matching skills
@@ -709,7 +709,7 @@ if st.session_state.get("ranked_resumes"):
         color_continuous_scale=px.colors.sequential.Greens
       )
       fig_skills.update_layout(xaxis_title=None, yaxis_title="Skills", showlegend=False)
-      st.plotly_chart(fig_skills, width="stretch")
+      st.plotly_chart(fig_skills, use_container_width=True)
 
     # --- Keyword Analysis ---
     st.markdown("---")
@@ -722,7 +722,7 @@ if st.session_state.get("ranked_resumes"):
       ''', unsafe_allow_html=True)
     top_keywords_df = get_top_keywords(filtered_resumes[:top_n], st.session_state.get("job_skills") or [])
     if not top_keywords_df.empty:
-      st.dataframe(top_keywords_df, width="stretch")
+      st.dataframe(top_keywords_df, use_container_width=True)
     else:
       st.info("No common skills found.")
 
@@ -746,11 +746,11 @@ if st.session_state.get("ranked_resumes"):
         include_jd = c2.checkbox("Job skills", value=True, help="Include extracted job skills in AI context")
 
         t1, t2 = st.columns([1, 1])
-        if t1.button("Clear", width="stretch"):
+        if t1.button("Clear", use_container_width=True):
           st.session_state.messages = []
         # Export transcript
         transcript = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages])
-        st.download_button("Export", data=transcript or "", file_name="assistant_chat.txt", mime="text/plain", width="stretch", key="export_chat_btn")
+        st.download_button("Export", data=transcript or "", file_name="assistant_chat.txt", mime="text/plain", use_container_width=True, key="export_chat_btn")
 
       # Quick suggestion chips
       st.markdown("<div class='muted' style='margin:.5rem 0 .3rem 0;'>Quick prompts</div>", unsafe_allow_html=True)
@@ -855,7 +855,7 @@ with tab2:
       } for analysis in previous_analyses]
 
       hist_df = pd.DataFrame(history_data)
-      st.dataframe(hist_df, width="stretch")
+      st.dataframe(hist_df, use_container_width=True)
 
       # Detailed analysis view with enhanced styling
       st.markdown("""
